@@ -60,6 +60,7 @@ static void zoomabs(const Arg *);
 static void zoomreset(const Arg *);
 static void ttysend(const Arg *);
 
+
 /* config.h for applying patches and the configuration. */
 #include "config.h"
 
@@ -284,6 +285,11 @@ selpaste(const Arg *dummy)
 {
 	XConvertSelection(xw.dpy, XA_PRIMARY, xsel.xtarget, XA_PRIMARY,
 			xw.win, CurrentTime);
+}
+
+void historyMode() {
+	win.mode ^= MODE_NORMAL;
+	historyModeStart();
 }
 
 void
@@ -1800,6 +1806,11 @@ kpress(XEvent *ev)
 		len = XmbLookupString(xw.ime.xic, e, buf, sizeof buf, &ksym, &status);
 	else
 		len = XLookupString(e, buf, sizeof buf, &ksym, NULL);
+
+	if (IS_SET(MODE_NORMAL)) {
+		kpressNormalMode(ksym);
+		return;
+	}
 	/* 1. shortcuts */
 	for (bp = shortcuts; bp < shortcuts + LEN(shortcuts); bp++) {
 		if (ksym == bp->keysym && match(bp->mod, e->state)) {
@@ -2028,7 +2039,7 @@ main(int argc, char *argv[])
 		opt_embed = EARGF(usage());
 		break;
 	case 'v':
-		die("%s " VERSION "\n", argv0);
+		die("%s \" VERSION \"\n", argv0);
 		break;
 	default:
 		usage();
