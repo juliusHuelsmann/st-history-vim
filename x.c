@@ -144,7 +144,6 @@ typedef struct {
 static inline ushort sixd_to_16bit(int);
 static int xmakeglyphfontspecs(XftGlyphFontSpec *, const Glyph *, int, int, int);
 static void xdrawglyphfontspecs(const XftGlyphFontSpec *, Glyph, int, int, int);
-static void xdrawglyph(Glyph, int, int);
 static void xclear(int, int, int, int);
 static int xgeommasktogravity(int);
 static int ximopen(Display *);
@@ -289,7 +288,7 @@ selpaste(const Arg *dummy)
 
 void historyMode() {
 	win.mode ^= MODE_NORMAL;
-	historyModeStart();
+	if (win.mode & MODE_NORMAL) historyModeStart();
 }
 
 void
@@ -1363,8 +1362,12 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	    (base.mode & ATTR_BOLD && dc.bfont.badweight)) {
 		base.fg = defaultattr;
 	}
+	if (base.mode & ATTR_CURRENT) { base.bg = currentBg; base.fg = currentFg; }
 
-	if (IS_TRUECOL(base.fg)) {
+//if (currentLine(x, y)) { printf("current line %d %d \n", x, y); base.bg = currentBg; base.fg = currentFg; }
+
+
+if (IS_TRUECOL(base.fg)) {
 		colfg.alpha = 0xffff;
 		colfg.red = TRUERED(base.fg);
 		colfg.green = TRUEGREEN(base.fg);
