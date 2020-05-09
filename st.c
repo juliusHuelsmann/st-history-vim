@@ -19,8 +19,8 @@
 
 // FIXED selection: sel swapping does not work properly.
 // FIXED column.
-// ERR   if the entire screen is selected nothing is selected.
-// ENHANCEMENT make sure that the buffer is alwys larger than the screen.
+// FIXED if the entire screen is selected nothing is selected.
+// FIXED make sure that the buffer is alwys larger than the screen.
 
 
 // tbd : split and make sure that amount of changes < 100
@@ -166,7 +166,7 @@ TCursor histCursor;
 Line *buffer = NULL;
 /// XXX: Size of the entire history buffer. In case the height of the window
 ///      [rows] is smaller, the buffer is repeated.
-int const buffSize = 120;
+int const buffSize = 200;
 int buffCols = 0;
 
 /* CSI Escape sequence structs */
@@ -2498,6 +2498,7 @@ tresize(int col, int row)
 	int i;
 	int const colSet = col;
 	col = MAX(col, buffCols);
+	row = MIN(row, buffSize);
 	int minrow = MIN(row, term.row);
 	int mincol = MIN(col, buffCols);
 	int *bp;
