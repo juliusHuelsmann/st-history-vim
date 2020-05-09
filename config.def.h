@@ -462,5 +462,6 @@ static char ascii_printable[] =
 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 	"`abcdefghijklmnopqrstuvwxyz{|}~";
 
-static unsigned int currentBg = 8;
-static unsigned int currentFg = 15;
+static unsigned int const currentBg = 8;
+static unsigned int const currentFg = 15;
+int const buffSize = 255;

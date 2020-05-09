@@ -1,30 +1,3 @@
-//Objective: API for writing to buffer does not change.
-// Selection neglected
-// switch when using position has to be done (done)
-// simple test functionality  has to be done (done)
-// resize                     has to be done (done)
-// scrollup / down change pos has to be done (done)
-// DONE: tclearregion overrieds parts of the buffer if buff size smaller than win size
-// DONE: cursor: on output the cursor moves down and 'contains' content of insert cursor.
-// DONE: Cursor recovery after exit normal mode.
-// SOLVED: alt screen resize error reallocating.
-
-// SOLVED  ALTSCREEN mode: does not paint properly...
-// DONE first line ( this is a cursor print problem )
-// DONE  ALTSCREEN mode:position
-// DONE  highlight current inspection cursor position.
-
-// DONE uninited condition (not clear lines prior to usin them)
-//      solved by disallowing scrolling over regions that are not filled yet.
-
-// FIXED selection: sel swapping does not work properly.
-// FIXED column.
-// FIXED if the entire screen is selected nothing is selected.
-// FIXED make sure that the buffer is alwys larger than the screen.
-
-
-// tbd : split and make sure that amount of changes < 100
-
 /* See LICENSE for license details. */
 #include <ctype.h>
 #include <errno.h>
@@ -83,9 +56,9 @@ enum term_mode {
 };
 
 enum cursor_movement {
+	CURSOR_COPY,
 	CURSOR_SAVE,
-	CURSOR_LOAD,
-	CURSOR_COPY
+	CURSOR_LOAD
 };
 
 enum cursor_state {
@@ -147,7 +120,7 @@ typedef struct {
 	int col;      /* nb col */
 	Line *line;   /* screen */
 	Line *alt;    /* alternate screen */
-	char *dirty;   /* dirtyness of lines */
+	int *dirty;   /* dirtyness of lines */
 	TCursor c;    /* cursor */
 	int ocx;      /* old cursor col */
 	int ocy;      /* old cursor row */
@@ -161,13 +134,10 @@ typedef struct {
 	int *tabs;
 } Term;
 
-int histOp = 0, histMode = 0, histOff = 0, histOffX = 0, insertOff = 0;
+extern int const buffSize;
+int histOp = 0, histMode = 0, histOff = 0, histOffX = 0, insertOff, buffCols;
 TCursor histCursor;
 Line *buffer = NULL;
-/// XXX: Size of the entire history buffer. In case the height of the window
-///      [rows] is smaller, the buffer is repeated.
-int const buffSize = 200;
-int buffCols = 0;
 
 /* CSI Escape sequence structs */
 /* ESC '[' [[ [<priv>] <arg> [;]] <mode> [<mode>]] */
@@ -617,7 +587,6 @@ getsel(void)
 			*ptr++ = '\n';
 	}
 	*ptr = 0;
-	printf("%s\n", str); // XXX: debug
 
 	return str;
 }
@@ -982,8 +951,8 @@ void
 tcursor(int mode)
 {
 	static TCursor c[2];
-	int const pos = IS_SET(MODE_ALTSCREEN);
-	TCursor * tar = histOp ? &histCursor : &c[pos];
+	int alt = IS_SET(MODE_ALTSCREEN);
+	TCursor * tar = histOp ? &histCursor : &c[alt];
 
 	if (mode == CURSOR_SAVE) {
 		*tar = term.c;
@@ -991,7 +960,7 @@ tcursor(int mode)
 		term.c = *tar;
 		tmoveto(tar->x, tar->y);
 	} else if (mode == CURSOR_COPY) {
-		histCursor = c[pos] = term.c;
+		histCursor = c[alt] = term.c;
 	}
 }
 
@@ -2427,7 +2396,6 @@ check_control_code:
 		 */
 		return;
 	}
-	//if (sel.ob.x != -1 && BETWEEN(term.c.y, sel.ob.y, sel.oe.y)) selclear();
 
 	gp = &term.line[term.c.y][term.c.x];
 	if (IS_SET(MODE_WRAP) && (term.c.state & CURSOR_WRAPNEXT)) {
@@ -2496,7 +2464,7 @@ void
 tresize(int col, int row)
 {
 	int i;
-	int const colSet = col;
+	int const colSet = col, alt = IS_SET(MODE_ALTSCREEN); 
 	col = MAX(col, buffCols);
 	row = MIN(row, buffSize);
 	int minrow = MIN(row, term.row);
@@ -2505,12 +2473,11 @@ tresize(int col, int row)
 	TCursor c;
 
 	if (col < 1 || row < 1) {
-		fprintf(stderr, "tresize: error resizing to %dx%d\n", col, row);
+		fprintf(stderr,
+		        "tresize: error resizing to %dx%d\n", col, row);
 		return;
 	}
-	printf("tresize: %dx%d\n", col, row);
 
-	int const alt = IS_SET(MODE_ALTSCREEN);
 	if (alt) tswapscreen();
 
 	/*
@@ -2635,7 +2602,6 @@ void kpressNormalMode(char ksym) {
 	performHistoryOperation(0);
 }
 
-
 void
 draw(void)
 {
@@ -2651,9 +2617,6 @@ draw(void)
 	if (base[term.ocy][term.ocx].mode & ATTR_WDUMMY) term.ocx--;
 	if (base[cur->y][cx].mode & ATTR_WDUMMY) cx--;
 
-
-	//int const yBuff = yInBuffer(cur->y);
-	//int const yBuffo = yInBuffer(term.ocy);
 	drawregion(0, 0, term.col, term.row);
 	int i;
 	Glyph g;

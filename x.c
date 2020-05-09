@@ -1364,10 +1364,7 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	}
 	if (base.mode & ATTR_CURRENT) { base.bg = currentBg; base.fg = currentFg; }
 
-//if (currentLine(x, y)) { printf("current line %d %d \n", x, y); base.bg = currentBg; base.fg = currentFg; }
-
-
-if (IS_TRUECOL(base.fg)) {
+	if (IS_TRUECOL(base.fg)) {
 		colfg.alpha = 0xffff;
 		colfg.red = TRUERED(base.fg);
 		colfg.green = TRUEGREEN(base.fg);
@@ -1809,7 +1806,7 @@ kpress(XEvent *ev)
 		len = XmbLookupString(xw.ime.xic, e, buf, sizeof buf, &ksym, &status);
 	else
 		len = XLookupString(e, buf, sizeof buf, &ksym, NULL);
-
+	/* custom commands normal mode */
 	if (IS_SET(MODE_NORMAL)) {
 		kpressNormalMode(ksym);
 		return;
@@ -2042,7 +2039,7 @@ main(int argc, char *argv[])
 		opt_embed = EARGF(usage());
 		break;
 	case 'v':
-		die("%s \" VERSION \"\n", argv0);
+		die("%s " VERSION "\n", argv0);
 		break;
 	default:
 		usage();
