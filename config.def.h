@@ -172,7 +172,6 @@ static MouseShortcut mshortcuts[] = {
 
 /* Internal keyboard shortcuts. */
 #define MODKEY Mod1Mask
-#define AltMask Mod1Mask
 #define TERMMOD (ControlMask|ShiftMask)
 
 static Shortcut shortcuts[] = {
@@ -189,7 +188,13 @@ static Shortcut shortcuts[] = {
 	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
 	{ ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
 	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
-	{ AltMask,              XK_c,           historyMode,    {.i =  0} },
+	{ MODKEY,               XK_i,           historyQuit,    {.i =  0} },
+	{ MODKEY,               XK_j,           historyMoveY,   {.i =  1} },
+	{ MODKEY,               XK_k,           historyMoveY,   {.i = -1} },
+	{ MODKEY,               XK_l,           historyMoveX,   {.i =  1} },
+	{ MODKEY,               XK_h,           historyMoveX,   {.i = -1} },
+	{ MODKEY|ShiftMask,     XK_J,           historyShiftY,  {.i =  1} },
+	{ MODKEY|ShiftMask,     XK_K,           historyShiftY,  {.i = -1} },
 };
 
 /*
@@ -462,6 +467,5 @@ static char ascii_printable[] =
 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
 	"`abcdefghijklmnopqrstuvwxyz{|}~";
 
-static unsigned int const currentBg = 8;
-static unsigned int const currentFg = 15;
+static unsigned int const currentBg = 8, currentFg = 15;
 int const buffSize = 255;

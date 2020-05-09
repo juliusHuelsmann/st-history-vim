@@ -1968,10 +1968,11 @@ toggleprinter(const Arg *arg)
 	term.mode ^= MODE_PRINT;
 }
 
-void historyModeStart(void) {
-	histMode = 1;
-	histOff = insertOff;
-	tcursor(CURSOR_COPY);
+void historyModeToggle(int on) {
+	if (histMode = on) {
+		histOff = insertOff;
+		tcursor(CURSOR_COPY);
+	}
 }
 
 void
@@ -2464,7 +2465,7 @@ void
 tresize(int col, int row)
 {
 	int i;
-	int const colSet = col, alt = IS_SET(MODE_ALTSCREEN); 
+	int const colSet = col, alt = IS_SET(MODE_ALTSCREEN);
 	col = MAX(col, buffCols);
 	row = MIN(row, buffSize);
 	int minrow = MIN(row, term.row);
@@ -2584,22 +2585,52 @@ drawregion(int x1, int y1, int x2, int y2)
 	memset(&term.dirty[y1], 0, sizeof(*term.dirty) * (y2 - y1));
 }
 
-void kpressNormalMode(char ksym) {
-	performHistoryOperation(1);
-	switch(ksym) {
-		case 'i':
-			historyMode(NULL);
-			histMode = 0;
-			selnormalize();
-			break;
-		case 'j': if (++term.c.y < term.row) break; else term.c.y = term.row - 1;
-		case 'J': tscrollup(term.bot, 1); break;
-		case 'k': if (--term.c.y >= 0) break; else term.c.y = 0;
-		case 'K': tscrolldown(term.top, 1); break;
-		case 'h': term.c.x = MAX(0, term.c.x - 1); break;
-		case 'l': term.c.x = MIN(term.col, term.c.x + 1); break;
+void historyQuit() {
+	int const hop = !histOp;
+	if (hop) performHistoryOperation(1);
+	historyModeToggle(0);
+	selnormalize();
+	if (hop) performHistoryOperation(0);
+}
+
+void historyMove(int x, int y, int ly) {
+	int const hop = !histOp;
+	if (hop) performHistoryOperation(1);
+	if (x) {
+		y += (term.c.x += x) / term.col - (term.c.x < 0);
+		if ((term.c.x %= term.col) < 0) term.c.x += term.col;
 	}
-	performHistoryOperation(0);
+	if (y) {
+		if ((term.c.y += y) >= term.row) ly += term.c.y - term.row + 1;
+		else if (term.c.y < 0) ly += term.c.y;
+		term.c.y = MIN(MAX(term.c.y, 0), term.row - 1);
+	}
+	if (ly %= buffSize) {
+		if (ly < 0) tscrolldown(term.top, -ly);
+		else tscrollup(term.bot, ly);
+	}
+	if (hop) performHistoryOperation(0);
+}
+
+void historyMoveX(Arg const *x) {
+	if (!histMode) historyModeToggle(1);
+	historyMove(x->i, 0, 0);
+	if (term.c.y == histCursor.y && term.c.x == histCursor.x
+	    && histOff == insertOff) historyQuit();
+}
+
+void historyMoveY(Arg const *y) {
+	if (!histMode) historyModeToggle(1);
+	historyMove(0, y->i, 0);
+	if (term.c.y == histCursor.y && term.c.x == histCursor.x
+	    && histOff == insertOff) historyQuit();
+}
+
+void historyShiftY(Arg const *ly) {
+	if (!histMode) historyModeToggle(1);
+	historyMove(0, 0, ly->i);
+	if (term.c.y == histCursor.y && term.c.x == histCursor.x
+	    && histOff == insertOff) historyQuit();
 }
 
 void

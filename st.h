@@ -83,8 +83,12 @@ void die(const char *, ...);
 void redraw(void);
 void draw(void);
 
-void historyModeStart(void);
-void historyMode();
+void historyModeToggle(int);
+void historyMove(int x, int y, int ly);
+void historyMoveX(Arg const *x);
+void historyMoveY(Arg const *y);
+void historyShiftY(Arg const *ly);
+void historyQuit();
 
 void printscreen(const Arg *);
 void printsel(const Arg *);
@@ -109,8 +113,6 @@ void selstart(int, int, int);
 void selextend(int, int, int, int);
 int selected(int, int);
 char *getsel(void);
-
-void kpressNormalMode(char);
 
 size_t utf8encode(Rune, char *);
 
