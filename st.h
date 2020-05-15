@@ -82,6 +82,9 @@ void die(const char *, ...);
 void redraw(void);
 void draw(void);
 
+void historyShiftY(Arg const *ly);
+void historyQuit();
+
 void printscreen(const Arg *);
 void printsel(const Arg *);
 void sendbreak(const Arg *);
