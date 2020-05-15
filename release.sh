@@ -28,7 +28,7 @@ patch() {
   echo "output: $patchFile"
 }
 
-patch history      historyVanilla      master           1
+patch history      historyVanilla      st-0.8.3         1
 patch columns      patch_column        historyVanilla   0 
 patch scrollback   patch_scrollback    historyVanilla   0
 patch selection    patch_sel           historyVanilla   0
