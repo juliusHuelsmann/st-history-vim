@@ -2560,11 +2560,15 @@ drawregion(int x1, int y1, int x2, int y2)
 {
 	int const o = !IS_SET(MODE_ALTSCREEN) && histMode && !histOp, h =rows();
 	int y;
+	static int bg = 0;//XXX: debug
+	bg = (bg + 1) % 255;//XXX: debug
 
 	for (y = y1; y < y2; y++) {
 		int const oy = o ? (y + insertOff - histOff + h) % h : y;
 		if (!(BETWEEN(oy, 0, term.row-1) && term.dirty[y])) continue;
 		xdrawline(term.line[y], x1, oy, x2);
+		term.line[y][term.col - 1 ].bg = bg; // XXX;
+		xdrawglyph(term.line[y][term.col-1], term.col-1, y); // XXX;
 	}
 	memset(&term.dirty[y1], 0, sizeof(*term.dirty) * (y2 - y1));
 }
