@@ -207,6 +207,7 @@ static void tstrsequence(uchar);
 static void drawregion(int, int, int, int);
 
 static void selscroll(int, int);
+static void selnormalize(void);
 
 static size_t utf8decode(const char *, Rune *, size_t);
 static Rune utf8decodebyte(char, size_t *);
@@ -441,7 +442,10 @@ void historyOpToggle(int start, int paint) {
 }
 
 void historyModeToggle(int start) {
-	if (!(histMode = (histOp = start))) { tfulldirt(); } else {
+	if (!(histMode = (histOp = start))) {
+		selnormalize();
+		tfulldirt();
+	} else {
 		tcursor(CURSOR_SAVE);
 		histOp = 0;
 		histOff = insertOff;
@@ -456,8 +460,21 @@ int historyBufferScroll(int n) {
 		memmove(&term.dirty[-MIN(n, 0)], &term.dirty[MAX(n, 0)], s * r);
 		memset(&term.dirty[n > 0 ? r : 0], 0, s * p);
 	}
+	int const prevOffBuf = sel.alt ? 0 : insertOff + term.row;
 	term.line = &buf[*ptr = (buffSize+*ptr+n) % buffSize];
-	if (!histOp) tclearregion(0, n>0?r+1:0, buffCols-1, n>0?term.row:p-1);
+	// Cut part of selection removed from buffer, and update sel.ne/b.
+	if (sel.ob.x != -1 && !histOp && n) {
+		int const offBuf = sel.alt ? 0 : insertOff + term.row,
+		          pb = rangeY(sel.ob.y - prevOffBuf),
+		          pe = rangeY(sel.oe.y - prevOffBuf);
+		int const b = rangeY(sel.ob.y - offBuf), nln = n < 0,
+		          e = rangeY(sel.oe.y - offBuf), last = offBuf - nln;
+		if (pb != b && (pb < b != nln)) sel.ob.y = last;
+		if (pe != e && (pe < e != nln)) sel.oe.y = last;
+		if (sel.oe.y == last && sel.ob.y == last) selclear();
+	}
+	selnormalize();
+	if (!histOp) tclearregion(0, n>0?r+1:0, term.col-1, n>0?term.row:p-1);
 	return 1;
 }
 
