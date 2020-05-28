@@ -28,10 +28,11 @@ patch() {
   echo "output: $patchFile"
 }
 
-patch history      historyVanilla      st-0.8.3         1
+patch history      historyVanilla      origin/st-0.8.3  1
 patch columns      patch_column        historyVanilla   0 
 patch scrollback   patch_scrollback    historyVanilla   0
 patch selection    patch_sel           historyVanilla   0
 patch repaint      patch_repaint       patch_scrollback 0
+patch vim-browse   patch_vim           patch_sel        0
 
 
