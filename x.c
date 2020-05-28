@@ -1356,7 +1356,6 @@ xdrawglyphfontspecs(const XftGlyphFontSpec *specs, Glyph base, int len, int x, i
 	    (base.mode & ATTR_BOLD && dc.bfont.badweight)) {
 		base.fg = defaultattr;
 	}
-	if (base.mode & ATTR_CURRENT) base.bg = currentBg;
 
 	if (IS_TRUECOL(base.fg)) {
 		colfg.alpha = 0xffff;
