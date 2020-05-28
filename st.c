@@ -2652,15 +2652,20 @@ drawregion(int x1, int y1, int x2, int y2)
 		memset(term.dirty, 0, sizeof(*term.dirty) * term.row);
 	int const o = !IS_SET(MODE_ALTSCREEN) && histMode && !histOp, h =rows();
 	int y;
-	static int bg = 0;//XXX: debug
-	bg = (bg + 1) % 255;//XXX: debug
+	static int drawCount = 0;                          // XXX: repaint debug
+	static int bg = 0;                                 // XXX: repaint debug
+	bg = (bg + 1) % 255;                               // XXX: repaint debug
 
 	for (y = y1; y < y2; y++) {
 		int const oy = o ? (y + insertOff - histOff + h) % h : y;
 		if (!BETWEEN(oy, 0, term.row-1) || !term.dirty[y]) continue;
+		if (++drawCount%40 == 0) printf("repainted %d %f\n", drawCount,
+		                                1.0*drawCount/term.row);
 		xdrawline(term.line[y], x1, oy, x2);
-		term.line[y][term.col - 1 ].bg = bg; // XXX;
-		xdrawglyph(term.line[y][term.col-1], term.col-1, y); // XXX;
+		Glyph g = term.line[y][term.col - 1 ];
+		g.bg = bg;                                 // XXX: repaint debug
+		xdrawglyph(g, term.col-1, oy);             // XXX: repaint debug
+
 	}
 	memset(&term.dirty[y1], 0, sizeof(*term.dirty) * (y2 - y1));
 }
