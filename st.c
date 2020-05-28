@@ -43,6 +43,8 @@
 #define ISCONTROLC1(c)		(BETWEEN(c, 0x80, 0x9f))
 #define ISCONTROL(c)		(ISCONTROLC0(c) || ISCONTROLC1(c))
 #define ISDELIM(u)		(u && wcschr(worddelimiters, u))
+static inline int max(int a, int b) { return a > b ? a : b; }
+static inline int min(int a, int b) { return a < b ? a : b; }
 
 enum term_mode {
 	MODE_WRAP        = 1 << 0,
@@ -234,8 +236,9 @@ static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 
 extern int const buffSize;
-int histOp = 0, histMode = 0, histOff = 0, histOffX = 0, insertOff;
+int histOp, histMode, histOff, histOffX, insertOff, altToggle;
 Line *buf = NULL;
+static TCursor c[3];
 static inline int rows() { return IS_SET(MODE_ALTSCREEN) ? term.row : buffSize;}
 static inline int rangeY(int i) { while (i < 0) i += rows(); return i % rows();}
 
@@ -433,16 +436,19 @@ tlinelen(int y)
 
 void historyOpToggle(int start, int paint) {
 	if (!histOp == !(histOp + start)) if ((histOp += start) || 1) return;
-	if (paint && !IS_SET(MODE_ALTSCREEN)) draw();
+	if (paint && (!IS_SET(MODE_ALTSCREEN) || altToggle)) draw();
 	tcursor(CURSOR_SAVE);
 	histOp += start;
-	if (!IS_SET(MODE_ALTSCREEN))term.line = &buf[histOp?histOff:insertOff];
+	if (altToggle) {
+		tswapscreen();
+		memset(term.dirty,0,sizeof(*term.dirty)*term.row);
+	}
 	tcursor(CURSOR_LOAD);
-	if (!histMode && paint && !IS_SET(MODE_ALTSCREEN)) redraw();
+	*(!IS_SET(MODE_ALTSCREEN)?&term.line:&term.alt)=&buf[histOp?histOff:insertOff];
 }
 
 void historyModeToggle(int start) {
-	if (!(histMode = (histOp = start))) {
+	if (!(histMode = (histOp = !!start))) {
 		selnormalize();
 		tfulldirt();
 	} else {
@@ -453,12 +459,12 @@ void historyModeToggle(int start) {
 }
 
 int historyBufferScroll(int n) {
-	if (IS_SET(MODE_ALTSCREEN)) return histOp;
-	int const p = abs(n%=term.row), s=sizeof(*term.dirty), r=term.row-p;
-	int *const ptr = (histOp ? &histOff : &insertOff);
+	if (IS_SET(MODE_ALTSCREEN) || !n) return histOp;
+	int p=abs(n=(n<0) ? max(n,-term.row) : min(n,term.row)), r=term.row-p,
+	          s=sizeof(*term.dirty), *ptr=histOp?&histOff:&insertOff;
 	if (!histMode || histOp) tfulldirt(); else {
-		memmove(&term.dirty[-MIN(n, 0)], &term.dirty[MAX(n, 0)], s * r);
-		memset(&term.dirty[n > 0 ? r : 0], 0, s * p);
+		memmove(&term.dirty[-min(n,0)], &term.dirty[max(n,0)], s*r);
+		memset(&term.dirty[n>0 ? r : 0], 0, s * p);
 	}
 	int const prevOffBuf = sel.alt ? 0 : insertOff + term.row;
 	term.line = &buf[*ptr = (buffSize+*ptr+n) % buffSize];
@@ -469,8 +475,8 @@ int historyBufferScroll(int n) {
 		          pe = rangeY(sel.oe.y - prevOffBuf);
 		int const b = rangeY(sel.ob.y - offBuf), nln = n < 0,
 		          e = rangeY(sel.oe.y - offBuf), last = offBuf - nln;
-		if (pb != b && (pb < b != nln)) sel.ob.y = last;
-		if (pe != e && (pe < e != nln)) sel.oe.y = last;
+		if (pb != b && ((pb < b) != nln)) sel.ob.y = last;
+		if (pe != e && ((pe < e) != nln)) sel.oe.y = last;
 		if (sel.oe.y == last && sel.ob.y == last) selclear();
 	}
 	selnormalize();
@@ -480,18 +486,19 @@ int historyBufferScroll(int n) {
 
 void historyMove(int x, int y, int ly) {
 	historyOpToggle(1, 1);
-	y += (term.c.x += x) / term.col - (term.c.x < 0);                  //< x
+	y += ((term.c.x += x) < 0 ?term.c.x-term.col :term.c.x) / term.col;//< x
 	if ((term.c.x %= term.col) < 0) term.c.x += term.col;
 	if ((term.c.y += y) >= term.row) ly += term.c.y - term.row + 1;    //< y
 	else if (term.c.y < 0) ly += term.c.y;
 	term.c.y = MIN(MAX(term.c.y, 0), term.row - 1);
-	if (ly%=buffSize) historyBufferScroll(ly);                  //< y-offset
+	int const flatPos = insertOff - histOff;                    //< y-offset
+	historyBufferScroll(!histMode ? ly : ((ly>=0) ? min(ly,rangeY(flatPos))
+	                              : -min(-ly, rangeY(-term.row-flatPos))));
 	historyOpToggle(-1, 1);
 }
 
 void selnormalize(void) {
-	if (sel.ob.x == -1) { /*seln.nb.y = sel.ne.y = 0;*/ return; }
-  historyOpToggle(1, 1);
+	historyOpToggle(1, 1);
 
 	int const oldb = sel.nb.y, olde = sel.ne.y;
 	if (sel.ob.x == -1) {
@@ -514,20 +521,20 @@ void selnormalize(void) {
 			if (cne) sel.ne.x = MAX(sel.ob.x, sel.oe.x);
 		}
 	}
-	int const newBet = sel.nb.y <= sel.ne.y;
-	int const oldBet = oldb <= olde;
+	int const nBet=sel.nb.y<=sel.ne.y, oBet=oldb<=olde;
 	for (int i = 0; i < term.row; ++i) {
-		term.dirty[i] = term.dirty[i]
-		    || ((newBet ? BETWEEN(i, sel.nb.y, sel.ne.y)
-		                : OUT(i, sel.nb.y, sel.ne.y)) !=
-		        (oldBet ? BETWEEN(i, oldb, olde) : OUT(i, oldb, olde)));
+		int const n = nBet ? BETWEEN(i, sel.nb.y, sel.ne.y)
+		                   : OUT(i, sel.nb.y, sel.ne.y);
+		term.dirty[i] |= (sel.type == SEL_RECTANGULAR && n) ||
+		        (n != (oBet ? BETWEEN(i,oldb,olde) : OUT(i,oldb,olde)));
+
 	}
 	if (BETWEEN(oldb, 0, term.row - 1)) term.dirty[oldb] = 1;
 	if (BETWEEN(olde, 0, term.row - 1)) term.dirty[olde] = 1;
 	if (BETWEEN(sel.nb.y, 0, term.row - 1)) term.dirty[sel.nb.y] = 1;
 	if (BETWEEN(sel.ne.y, 0, term.row - 1)) term.dirty[sel.ne.y] = 1;
 
-  historyOpToggle(-1, 1);
+	historyOpToggle(-1, 1);
 }
 
 void
@@ -607,7 +614,7 @@ getsel(void)
 			gp = &cbuf[yy][start == y ? sel.nb.x : 0];
 			lastx = (endy == y) ? sel.ne.x : term.col-1;
 		}
-		last = &cbuf[yy][lastx - 1];
+		last = &cbuf[yy][lastx];
 		if (!(cbuf[yy][term.col - 1].mode & ATTR_WRAP))
 			while (last > gp && last->u == ' ') --last;
 
@@ -992,7 +999,6 @@ tfulldirt(void)
 void
 tcursor(int mode)
 {
-	static TCursor c[3];
 	int alt = (histOp) ? 0 : (IS_SET(MODE_ALTSCREEN) + 1);
 
 	if (mode == CURSOR_SAVE) {
@@ -2566,12 +2572,14 @@ resettitle(void)
 void
 drawregion(int x1, int y1, int x2, int y2)
 {
+	if (altToggle && histMode && !histOp)
+		memset(term.dirty, 0, sizeof(*term.dirty) * term.row);
 	int const o = !IS_SET(MODE_ALTSCREEN) && histMode && !histOp, h =rows();
 	int y;
 
 	for (y = y1; y < y2; y++) {
 		int const oy = o ? (y + insertOff - histOff + h) % h : y;
-		if (!(BETWEEN(oy, 0, term.row-1) && term.dirty[y])) continue;
+		if (!BETWEEN(oy, 0, term.row-1) || !term.dirty[y]) continue;
 		xdrawline(term.line[y], x1, oy, x2);
 	}
 	memset(&term.dirty[y1], 0, sizeof(*term.dirty) * (y2 - y1));
