@@ -82,7 +82,7 @@ metaPatch() {
     patch -p1 < $patchFile
   done
   git add *.c *.h
-  git rm --cached config.h
+  rm config.h
   git commit -am "meta-patch: $patchName"
   git format-patch --stdout $branchBase > $patchOutputFile
   git checkout master
