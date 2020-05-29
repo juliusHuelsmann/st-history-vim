@@ -28,7 +28,7 @@ getPatchFileName() {
 }
 
 # Generate a patch from the git repo.
-patch() {
+origPatch() {
   patchName=$1
   branchChanges=$2
   branchBase=$3
@@ -79,12 +79,12 @@ metaPatch() {
     else
       echo -e "patch file: $name:\t $patchFile"
     fi
-
     patch -p1 < $patchFile
   done
-
+  git add *.c *.h
+  git rm --cached config.h
   git commit -am "meta-patch: $patchName"
-  git format-patch --stdout $branchBase > $patchFile
+  git format-patch --stdout $branchBase > $patchOutputFile
   git checkout master
   
   echo "meta-output: $patchOutputFile from $tmpBranch"
@@ -95,12 +95,12 @@ exportMeta=$2
 
 # 'raw' single patches
 if [[ $exportRaw -eq 1 ]]; then
-  patch $namePatchHistory    historyVanilla      st-0.8.3         1
-  patch $namePatchCols       patch_column        historyVanilla   0 
-  patch $namePatchScrollback patch_scrollback    historyVanilla   0
-  patch $namePatchSel        patch_sel           historyVanilla   0
-  patch $namePatchRepaint    patch_repaint       patch_scrollback 0
-  patch $namePatchVim        patch_vim           patch_sel        0
+  origPatch $namePatchHistory    historyVanilla      st-0.8.3         1
+  origPatch $namePatchCols       patch_column        historyVanilla   0 
+  origPatch $namePatchScrollback patch_scrollback    historyVanilla   0
+  origPatch $namePatchSel        patch_sel           historyVanilla   0
+  origPatch $namePatchRepaint    patch_repaint       patch_scrollback 0
+  origPatch $namePatchVim        patch_vim           patch_sel        0
 fi
 
 if [[ $exportMeta -eq 1 ]]; then
