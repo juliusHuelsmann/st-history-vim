@@ -80,7 +80,7 @@ metaPatch() {
       echo -e "patch file: $name:\t $patchFile"
     fi
 
-    git apply $patchFile
+    patch -p1 < $patchFile
   done
 
   git commit -am "meta-patch: $patchName"
