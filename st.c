@@ -463,6 +463,7 @@ int historyBufferScroll(int n) {
 		memset(&term.dirty[n>0 ? r : 0], 0, s * p);
 	}
 	term.line = &buf[*ptr = (buffSize+*ptr+n) % buffSize];
+  // Clear the new region exposed by the shift.
 	if (!histOp) tclearregion(0, n>0?r+1:0, term.col-1, n>0?term.row:p-1);
 	return 1;
 }
@@ -478,14 +479,6 @@ void historyMove(int x, int y, int ly) {
 	historyBufferScroll(!histMode ? ly : ((ly>=0) ? min(ly,rangeY(flatPos))
 	                              : -min(-ly, rangeY(-term.row-flatPos))));
 	historyOpToggle(-1, 1);
-}
-
-void historyQuit() { historyModeToggle(0); }
-
-void historyShiftY(Arg const *y) {
-	if (!histMode) historyModeToggle(1);
-	historyMove(0, 0, y->i);
-	if (insertOff == histOff) historyModeToggle(0);
 }
 
 void
@@ -2615,7 +2608,6 @@ tresize(int col, int row)
 	}
 	for (i = 0; i < row; ++i) buf[buffSize + i] = buf[i];
 	term.line = &buf[*(histOp?&histOff:&insertOff) +=MAX(term.c.y-row+1,0)];
-
 	/* update terminal size */
 	term.col = col;
 	term.row = row;
@@ -2702,4 +2694,12 @@ redraw(void)
 {
 	tfulldirt();
 	draw();
+}
+
+void historyQuit() { historyModeToggle(0); }
+
+void historyShiftY(Arg const *y) {
+	if (!histMode) historyModeToggle(1);
+	historyMove(0, 0, y->i);
+	if (insertOff == histOff) historyModeToggle(0);
 }
