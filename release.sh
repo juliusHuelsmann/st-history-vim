@@ -48,10 +48,10 @@ origPatch() {
   branchBase=$3
   useCommit=$4
   
-  patchOutputFile=$(getPatchFileName $patchName $branchBase $useCommit)
-
   git checkout $branchChanges
   git checkout $branchBase
+  patchOutputFile=$(getPatchFileName $patchName $branchBase $useCommit)
+
   git checkout -b tmpSquash
   git merge --squash $branchChanges
   git commit -am "patch: $patchName"
