@@ -9,6 +9,20 @@
 
 set -e
 
+if [[ ! -e patches ]]; then mkdir patches; fi
+
+# Human-readable names of the different patches
+namePatchHistory="history"
+namePatchCols="columns"
+namePatchScrollback="scrollback"
+namePatchSel="selection"
+namePatchRepaint="repaint"
+namePatchVim="vim-browse"
+
+# arguments: whether to generate raw patches and meta patches.
+exportRaw=$1
+exportMeta=$2
+
 # Return the name of the generated patch file.
 getPatchFileName() {
   patchName=$1
@@ -36,6 +50,7 @@ origPatch() {
   
   patchOutputFile=$(getPatchFileName $patchName $branchBase $useCommit)
 
+  git checkout $branchChanges
   git checkout $branchBase
   git checkout -b tmpSquash
   git merge --squash $branchChanges
@@ -46,14 +61,6 @@ origPatch() {
 
   echo "output: $patchOutputFile"
 }
-
-namePatchHistory="history"
-namePatchCols="columns"
-namePatchScrollback="scrollback"
-namePatchSel="selection"
-namePatchRepaint="repaint"
-namePatchVim="vim-browse"
-
 
 # Generate meta patches from the patches generated above.
 metaPatch() {
@@ -82,16 +89,15 @@ metaPatch() {
     patch -p1 < $patchFile
   done
   git add *.c *.h
-  rm config.h
+  if [[ -f "config.h" ]]; then
+    rm config.h
+  fi
   git commit -am "meta-patch: $patchName"
   git format-patch --stdout $branchBase > $patchOutputFile
   git checkout master
   
   echo "meta-output: $patchOutputFile from $tmpBranch"
 }
-
-exportRaw=$1
-exportMeta=$2
 
 # 'raw' single patches
 if [[ $exportRaw -eq 1 ]]; then
