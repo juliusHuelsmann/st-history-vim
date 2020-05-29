@@ -481,14 +481,6 @@ void historyMove(int x, int y, int ly) {
 	historyOpToggle(-1, 1);
 }
 
-void historyQuit() { historyModeToggle(0); }
-
-void historyShiftY(Arg const *y) {
-	if (!histMode) historyModeToggle(1);
-	historyMove(0, 0, y->i);
-	if (insertOff == histOff) historyModeToggle(0);
-}
-
 void
 selstart(int col, int row, int snap)
 {
@@ -2693,4 +2685,12 @@ redraw(void)
 {
 	tfulldirt();
 	draw();
+}
+
+void historyQuit() { historyModeToggle(0); }
+
+void historyShiftY(Arg const *y) {
+	if (!histMode) historyModeToggle(1);
+	historyMove(0, 0, y->i);
+	if (insertOff == histOff) historyModeToggle(0);
 }
