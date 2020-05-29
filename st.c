@@ -463,6 +463,7 @@ int historyBufferScroll(int n) {
 		memset(&term.dirty[n>0 ? r : 0], 0, s * p);
 	}
 	term.line = &buf[*ptr = (buffSize+*ptr+n) % buffSize];
+  // Clear the new region exposed by the shift.
 	if (!histOp) tclearregion(0, n>0?r+1:0, term.col-1, n>0?term.row:p-1);
 	return 1;
 }
@@ -2607,7 +2608,6 @@ tresize(int col, int row)
 	}
 	for (i = 0; i < row; ++i) buf[buffSize + i] = buf[i];
 	term.line = &buf[*(histOp?&histOff:&insertOff) +=MAX(term.c.y-row+1,0)];
-
 	/* update terminal size */
 	term.col = col;
 	term.row = row;
