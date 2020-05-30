@@ -11,7 +11,7 @@ scroll-back patch operating on top of the history functionality and is also deve
 repository. The vim patch provides >50 vim-like motions & operators and a search & info overlay.
 Documentation on how this patch is used can be found:
 1. in the source code of `normalMode.c`: function `kpressHist()` -> `executeMotion()`,
-2. in the Wiki, or
+2. in the [Wiki](https://github.com/juliusHuelsmann/st-history-vim/wiki/Vim-browse-manual), or
 3. at the [Suckless release page](https://st.suckless.org/patches/vim_browse/).
 
 ## Patches
