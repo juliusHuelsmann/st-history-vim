@@ -1,5 +1,5 @@
 # st-history / st-vim-browse
-History patch for `st`, which
+History patch for suckless' simple terminal (`st`), which
 1. Maintains two distinct cursor positions for inserting new content and viewing old content.
 2. Keeps the interface to the line buffer unchanged, and hence is supposed to yield less merge
    conflicts
@@ -14,7 +14,7 @@ Documentation on how this patch is used can be found:
 2. in the Wiki, or
 3. at the [Suckless release page](https://st.suckless.org/patches/vim_browse/).
 
-# Patches
+## Patches
 In this repository I develop the following separate patches on corresponding branches
 1. `historyVanilla`: essential history patch which provides logic and utility functionality for
    moving through the terminal history.
@@ -27,7 +27,7 @@ In this repository I develop the following separate patches on corresponding bra
    This comes in handy when debugging / developing a custom `scroll-back` functionality.
 6. `patch_vim`: offers vim-like motions for moving through the history, yanking text and searching.
 
-# Assembling the latest patches
+## Assembling the latest patches
 The script `release.sh` on branch `master` / `tool` assembles the latest versions of all patches
 and provides them in a newly created patches directory.
 It generates (1) a raw patch for each branch, and (2) meta-patches for useful combinations of the
@@ -35,14 +35,26 @@ patches provided above.
 ```bash
 ./release.sh 1 1
 ```
+The patches are released [on this release page](https://github.com/juliusHuelsmann/st/releases) and
+[on the suckless page](https://st.suckless.org/patches/vim_browse/).
 
-# History buffer implementation
+## Build the vim patch
+The patches can be applied to `st`'s source and build code via
+```bash
+patch < [PATCH_NAME]
+make
+```
+after removing/adapting an existing `config.h` to contain the changes shipped in the `config.def.h`.
+
+The pre-patched current version of the full vim patch with a reasonable configuration and some
+additional patches can be tried out in [this repository](https://github.com/juliusHuelsmann/st),
+in which this patches are also ported to new releases of `st`,
+and [released](https://github.com/juliusHuelsmann/st/releases).
+
+## On the history buffer implementation
 The interface to the buffer `term.line` is kept unchanged and points to a chunk inside a history
 round-buffer; changes are hence limited only to very few functions.
 When inspecting history or scrolling down, the position of the chunk is changed.
 Therefore, functions which operate in the history buffer are 'annotated' to trigger a `history
 Operation`.
 The `vanilla history patch` provides utility function for conveniently moving through history.
-
-# Authors
-Julius Hülsmann - <juliusHuelsmann [at] gmail [dot] com>
