@@ -71,7 +71,7 @@ static int findString(int8_t s, int all) {
 /// Execute series of normal-mode commands from char array / decoded from dynamic array
 static ExitState pressKeys(char const* s, size_t e) {
 	ExitState x=succ;
-	for (size_t i=0; i<e && (x=s[i] == ' ' ? x : kpressHist(&s[i], 1, 0, NULL)); ++i);
+	for (size_t i=0; i<e && (x=(!s[i] ? x : kpressHist(&s[i], 1, 0, NULL))); ++i);
 	return x;
 }
 static ExitState executeCommand(uint32_t *c, size_t z) {
@@ -90,10 +90,10 @@ static ExitState expandExpression(char c) { //    ({ =>)       l  ?  {  \n | l |
 	int a=state.cmd.infix==infix_a, yank=state.cmd.op=='y', lc=tolower(c), found=1;
 	state.cmd.infix = infix_none;
 	if(!yank && state.cmd.op!=visual && state.cmd.op!=visualLine) return failed;
-	char mot[11] = {'l', ' ', 'b', ' ', ' ', 'v', ' ', 'e', ' ', ' ', yank ? 'y' : ' '};
-	if (lc == 'w') mot[2] = 'b' - lc + c, mot[7] = (a ? 'w' : 'e') - lc + c, mot[9]=a?'h':' ';
+	char mot[11] = {'l', 0, 'b', 0, 0, 'v', 0, 'e', 0, 0, yank ? 'y' : 0};
+	if (lc == 'w') mot[2] = 'b' - lc + c, mot[7] = (a ? 'w' : 'e') - lc + c, mot[9]=a?'h':0;
 	else {
-		mot[1]='?', mot[3]=mot[8]='\n', mot[6]='/', mot[4]=a?' ':'l', mot[9]=a?' ':'h';
+		mot[1]='?', mot[3]=mot[8]='\n', mot[6]='/', mot[4]=a?0:'l', mot[9]=a?0:'h';
 		for (int i=found=0; !found && i < 6; ++i)
 			if ((found=contains(c,brack[i],2))) mot[2]=brack[i][0], mot[7]=brack[i][1];
 	}
