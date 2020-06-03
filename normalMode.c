@@ -264,7 +264,8 @@ void historyOverlay(int x, int y, Glyph* g) {
 		else if (x > term.col - 7) g->u = posBuffer[x - term.col + 7];
 		else getChar(size(&cCmd) ?&cCmd :&lCmd, g, term.row-1, term.col-7, term.col/3-6, x);
 	} else if (highlighted(x, y)) g->bg = highlightBg, g->fg = highlightFg;
-	else if ((x==cHist->x) || (y==cHist->y)) g->bg = currentBg;
+	else if ((x==cHist->x) ^ (y==cHist->y)) g->bg = currentBg;
+	else if (x==cHist->x) g->mode^=ATTR_REVERSE;
 }
 void historyPreDraw() {
 	static Pos op = {.p={0, 0, 0}};
