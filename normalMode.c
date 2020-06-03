@@ -21,7 +21,8 @@ struct NormalModeState {
 } defaultNormalMode, state;
 DynamicArray searchStr=UTF8_ARRAY, cCmd=UTF8_ARRAY, lCmd=UTF8_ARRAY;
 Glyph styleCmd;
-char posBuffer[10], brack[6][2] = { {"()"}, {"<>"}, {"{}"}, {"[]"}, {"\"\""}, {"''"}}, exited=1;
+char posBuffer[10], brack[6][2] = { {"()"}, {"<>"}, {"{}"}, {"[]"}, {"\"\""}, {"''"}};
+int exited=1, overlay=1;
 static inline uint32_t cchar() { return term.line[term.c.y][term.c.x].u; }
 static inline int pos(int p, int h) {return IS_SET(MODE_ALTSCREEN)?p:rangeY(p+h*histOff-insertOff);}
 static inline int contains(char c, char const * values, uint32_t memSize) {
@@ -109,6 +110,7 @@ int executeMotion(char const cs, int len, KeySym const *const ks) {
 	else if (ks && *ks == XK_u) historyMove(0, 0, -term.row / 2);
 	else if (ks && *ks == XK_f) historyMove(0, 0, term.row-1+(term.c.y=0));
 	else if (ks && *ks == XK_b) historyMove(0, 0, -(term.c.y=term.row-1));
+	else if (ks && *ks == XK_h) overlay = !overlay;
 	else if (!len) return failed;
 	else if (cs == 'K') historyMove(0, 0, -state.m.c);
 	else if (cs == 'J') historyMove(0, 0,  state.m.c);
@@ -147,7 +149,7 @@ int executeMotion(char const cs, int len, KeySym const *const ks) {
 ExitState kpressHist(char const *cs, int len, int ctrl, KeySym const *ksym) {
 	historyOpToggle(1, 1);
 	int const prevYOff=IS_SET(MODE_ALTSCREEN)?0:histOff, search=state.m.search&&state.m.active,
-	          prevAltToggle=altToggle;
+	          prevAltToggle=altToggle, prevOverlay=overlay;
 	int const noOp=!state.cmd.op&&!state.cmd.infix, num=len==1&&BETWEEN(cs[0],48,57),
 	          esc=ksym&&*ksym==XK_Escape, ret=(ksym&&*ksym==XK_Return)||(len==1&&cs[0]=='\n'),
 	          quantifier=num&&(cs[0]!='0'||state.m.c), ins=!search &&noOp &&len &&cs[0]=='i';
@@ -242,8 +244,10 @@ ExitState kpressHist(char const *cs, int len, int ctrl, KeySym const *ksym) {
 	int const posLin = !IS_SET(MODE_ALTSCREEN) ? rangeY(insertOff-histOff):0, h=rows()-term.row;
 	if (!posLin || posLin==h || !h) strcpy(posBuffer, posLin ? " [BOT] " : " [TOP] ");
 	else sprintf(posBuffer, " % 3d%c  ", min(100, max(0, .5 + posLin * 100. / h)),'%');
-	if (!term.dirty[term.row-1]) xdrawline(term.line[term.row-1], term.col*2/3, term.row-1, term.col-1);
-	if (!term.dirty[term.row-2]) xdrawline(term.line[term.row-2], term.col*2/3, term.row-2, term.col-1);
+	if ((overlay || overlay!=prevOverlay) && term.col>9 && term.row>4) {
+		if (!term.dirty[term.row-1]) xdrawline(term.line[term.row-1], term.col*2/3, term.row-1, term.col-1);
+		if (!term.dirty[term.row-2]) xdrawline(term.line[term.row-2], term.col*2/3, term.row-2, term.col-1);
+	}
 	if (result==finished) altToggle = 0;
 	if (altToggle != prevAltToggle) tswapscreen();
 end:
@@ -254,7 +258,7 @@ end:
 void historyOverlay(int x, int y, Glyph* g) {
 	if (!histMode) return;
 	TCursor const *cHist = histOp ? &term.c : &c[0];
-	if((x > (2*term.col/3)) && (y >= (term.row-2))) {
+	if(overlay && term.col > 9 && term.row > 4 && (x > (2*term.col/3)) && (y >= (term.row-2))) {
 		*g = (y == term.row - 2) ? styleSearch : styleCmd;
 		if (y == term.row-2) getChar(&searchStr, g, term.row-2, term.col-2, term.col/3, x);
 		else if (x > term.col - 7) g->u = posBuffer[x - term.col + 7];
