@@ -135,11 +135,11 @@ int executeMotion(char const cs, int len, KeySym const *const ks) {
 		int const low=cs<=90, off=tolower(cs)!='w', sgn=(tolower(cs)=='b')?-1:1,
 		          l=strlen(wDelL), s=strlen(wDelS), mit=rows()*term.col;
 		for (int it=0, on=0; state.m.c > 0; ++it) {
-			if (off || it) historyMove(sgn, 0, 0);        //< offset move if required
+			if (off || it) if (!historyMove(sgn, 0, 0)) it = mit;        //< offset move
 			int n = 1<<(contains(cchar(),wDelS,s) ?(2-low) :!contains(cchar(),wDelL,l)),
 			    found = (on|=n)^n && ((off ?on^n :n)!=1); //< state change &letter state
-			if (found && off) historyMove(-sgn, 0, 0);    //< offset move if required
-			if (found || it>mit) it=on=n=0, --state.m.c;  //< terminate iteration.
+			if (found && off) historyMove(-sgn, 0, 0);       //< offset move if required
+			if (found || it>mit) it=on=0, --state.m.c;           //< terminate iteration
 		}
 	} else return failed;
 	state.m.c = 0;
