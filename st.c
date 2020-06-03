@@ -485,17 +485,19 @@ int historyBufferScroll(int n) {
 	return 1;
 }
 
-void historyMove(int x, int y, int ly) {
+int historyMove(int x, int y, int ly) {
 	historyOpToggle(1, 1);
 	y += ((term.c.x += x) < 0 ?term.c.x-term.col :term.c.x) / term.col;//< x
 	if ((term.c.x %= term.col) < 0) term.c.x += term.col;
 	if ((term.c.y += y) >= term.row) ly += term.c.y - term.row + 1;    //< y
 	else if (term.c.y < 0) ly += term.c.y;
 	term.c.y = MIN(MAX(term.c.y, 0), term.row - 1);
-	int const flatPos = insertOff - histOff;                    //< y-offset
-	historyBufferScroll(!histMode ? ly : ((ly>=0) ? min(ly,rangeY(flatPos))
-	                              : -min(-ly, rangeY(-term.row-flatPos))));
+	int off=insertOff-histOff, bot=rangeY(off), top=-rangeY(-term.row-off),
+	    pTop = (-ly>-top), pBot = (ly > bot), fin=histMode&&(pTop||pBot);
+	if (fin && (x||y)) term.c.x = pBot ? term.col-1 : 0;
+	historyBufferScroll(fin ? (pBot ? bot : top) : ly);
 	historyOpToggle(-1, 1);
+	return fin;
 }
 
 void selnormalize(void) {
