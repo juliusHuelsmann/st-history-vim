@@ -139,7 +139,7 @@ int executeMotion(char const cs, int len, KeySym const *const ks) {
 			int n = 1<<(contains(cchar(),wDelS,s) ?(2-low) :!contains(cchar(),wDelL,l)),
 			    found = (on|=n)^n && ((off ?on^n :n)!=1); //< state change &letter state
 			if (found && off) historyMove(-sgn, 0, 0);       //< offset move if required
-			if (found || it>mit) it=on=0, --state.m.c;           //< terminate iteration
+			if (found || it>mit) it=-1, on=0, --state.m.c;       //< terminate iteration
 		}
 	} else return failed;
 	state.m.c = 0;
