@@ -193,16 +193,11 @@ ExitState kpressHist(char const *cs, int len, int ctrl, KeySym const *ksym) {
 		state.m.active = 1;
 	} else if (cs[0]==infix_i || cs[0]==infix_a) { state.cmd.infix=cs[0];
 	} else if (cs[0] == 'y') {
-		result = state.cmd.op ? exitMotion: succ;
-		if (result == exitMotion) {
-			if (state.cmd.op == yank) { //< Complete yank
-				selstart(0, term.c.y, 0);
-				selextend(term.col-1, term.c.y, SEL_REGULAR, 0);
-			} else state.cmd.op = yank;
-		} else {
-			state.cmd.op = yank;
-			selstart(term.c.x, term.c.y, 0);
-		}
+		if (state.cmd.op) {
+			result = (state.cmd.op == yank) ? exitOp : exitMotion;
+			if (state.cmd.op == yank) selstart(0, term.c.y, 0);
+		} else selstart(term.c.x, term.c.y, 0);
+		state.cmd.op = yank;
 	} else if (cs[0] == visual || cs[0] == visualLine) {
 		if (state.cmd.op != (unsigned char) cs[0]) {
 			state.cmd = defaultNormalMode.cmd;
@@ -217,7 +212,7 @@ ExitState kpressHist(char const *cs, int len, int ctrl, KeySym const *ksym) {
 	} // Operation/Motion finished if valid: update cmd string, extend selection, update search
 	if (result != failed) {
 		if (len == 1 && !ctrl) decodeTo(cs, len, &cCmd);
-		if (state.cmd.op == visualLine) {
+		if ((state.cmd.op == visualLine) || ((state.cmd.op == yank) && (result == exitOp))) {
 			int const off = pos(term.c.y, 1) < pos(sel.ob.y, 0);
 			sel.ob.x = off ? term.col - 1 : 0;
 			selextend(off ? 0 : term.col-1, term.c.y, sel.type, 0);
