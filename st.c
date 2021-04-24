@@ -1126,7 +1126,7 @@ tswapscreen(void)
 void
 tscrolldown(int orig, int n)
 {
-	if (historyBufferScroll(-n)) return;
+	if (!orig && historyBufferScroll(-n)) return;
 	int i;
 	Line temp;
 
@@ -1147,7 +1147,7 @@ tscrolldown(int orig, int n)
 void
 tscrollup(int orig, int n)
 {
-	if (historyBufferScroll(n)) return;
+	if (!orig && historyBufferScroll(n)) return;
 	int i;
 	Line temp;
 
