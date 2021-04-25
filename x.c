@@ -1808,8 +1808,8 @@ kpress(XEvent *ev)
 	else
 		len = XLookupString(e, buf, sizeof buf, &ksym, NULL);
 	if (IS_SET(MODE_NORMAL)) {
-		if (kpressHist(buf, len, match(ControlMask, e->state), &ksym)
-		                                      == finished) normalMode();
+		if (kPressHist(buf, len, match(ControlMask, e->state), &ksym)
+		                                      == finish) normalMode();
 		return;
 	}
 	/* 1. shortcuts */
