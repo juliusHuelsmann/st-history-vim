@@ -68,7 +68,7 @@ static int findString(int s, int all) {
 	return wIdx == strSz;
 }
 /// Execute series of normal-mode commands from char array / decoded from dynamic array
-static ExitState pressKeys(char const* s, size_t e) {
+ExitState pressKeys(char const* s, size_t e) {
 	ExitState x=success;
 	for (size_t i=0; i<e && (x=(!s[i] ? x : kPressHist(&s[i], 1, 0, NULL))); ++i);
 	return x;
@@ -175,6 +175,7 @@ ExitState kPressHist(char const *cs, size_t len, int ctrl, KeySym const *kSym) {
 	} else if (len == 0) { result = failed;
 	} else if (quantifier) { state.m.c = min(SHRT_MAX, (int)state.m.c*10+cs[0]-48);
 	} else if (state.cmd.infix && state.cmd.op && (result = expandExpression(cs[0]), len=0)) {
+    } else if (cs[0] == 'd') { state = defaultNormalMode; result = exitMotion; state.m.active = 1;
 	} else if (cs[0] == '.') {
 		if (size(&cCmd)) assign(&lCmd, &cCmd);
 		empty(&cCmd);
