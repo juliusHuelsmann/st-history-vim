@@ -234,6 +234,7 @@ static uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
 static Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 
+int buffCols;
 extern int const buffSize;
 int histOp, histMode, histOff, insertOff, altToggle;
 Line *buf = NULL;
@@ -464,7 +465,7 @@ int historyBufferScroll(int n) {
 	}
 	term.line = &buf[*ptr = (buffSize+*ptr+n) % buffSize];
   // Clear the new region exposed by the shift.
-	if (!histOp) tclearregion(0, n>0?r+1:0, term.col-1, n>0?term.row:p-1);
+	if (!histOp) tclearregion(0, n>0?r+1:0, buffCols-1, n>0?term.row:p-1);
 	return 1;
 }
 
@@ -1313,8 +1314,8 @@ tclearregion(int x1, int y1, int x2, int y2)
 	if (y1 > y2)
 		temp = y1, y1 = y2, y2 = temp;
 
-	LIMIT(x1, 0, term.col-1);
-	LIMIT(x2, 0, term.col-1);
+	LIMIT(x1, 0, buffCols-1);
+	LIMIT(x2, 0, buffCols-1);
 	LIMIT(y1, 0, term.row-1);
 	LIMIT(y2, 0, term.row-1);
 
@@ -2553,10 +2554,10 @@ void
 tresize(int col, int row)
 {
 	int i;
+	int const colSet = col, alt = IS_SET(MODE_ALTSCREEN), ini = buf == NULL;
+	col = MAX(col, buffCols);
 	row = MIN(row, buffSize);
-	int minrow = MIN(row, term.row);
-	int mincol = MIN(col, term.col);
-	int const alt = IS_SET(MODE_ALTSCREEN), ini = buf == NULL;
+	int const minrow = MIN(row, term.row), mincol = MIN(col, buffCols);
 	int *bp;
 	TCursor c;
 
@@ -2598,10 +2599,10 @@ tresize(int col, int row)
 	for (/* i = minrow */; i < row; i++) {
 		term.alt[i] = xmalloc(col * sizeof(Glyph));
 	}
-	if (col > term.col) {
-		bp = term.tabs + term.col;
+	if (col > buffCols) {
+		bp = term.tabs + buffCols;
 
-		memset(bp, 0, sizeof(*term.tabs) * (col - term.col));
+		memset(bp, 0, sizeof(*term.tabs) * (col - buffCols));
 		while (--bp > term.tabs && !*bp)
 			/* nothing */ ;
 		for (bp += tabspaces; bp < term.tabs + col; bp += tabspaces)
@@ -2610,12 +2611,13 @@ tresize(int col, int row)
 	Glyph g=(Glyph){.bg=term.c.attr.bg, .fg=term.c.attr.fg, .u=' ', .mode=0};
 	for (i = 0; i < buffSize; ++i) {
 		buf[i] = xrealloc(ini ? NULL : buf[i], col*sizeof(Glyph));
-		for (int j = ini ? 0 : term.col; j < col; ++j) buf[i][j] = g;
+		for (int j = ini ? 0 : buffCols; j < col; ++j) buf[i][j] = g;
 	}
 	for (i = 0; i < row; ++i) buf[buffSize + i] = buf[i];
 	term.line = &buf[*(histOp?&histOff:&insertOff) +=MAX(term.c.y-row+1,0)];
 	/* update terminal size */
-	term.col = col;
+	term.col = colSet;
+	buffCols = col;
 	term.row = row;
 	if (alt) tswapscreen();
 	/* reset scrolling region */
