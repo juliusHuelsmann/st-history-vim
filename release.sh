@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Script for automatically exporting diff in the correct format for all patches
 # Usage: 
 #    $1: if 1: export patch files.
@@ -105,14 +107,15 @@ if [[ $exportRaw -eq 1 ]]; then
   origPatch $namePatchCols       patch_column        historyVanilla   0 
   origPatch $namePatchScrollback patch_scrollback    historyVanilla   0
   origPatch $namePatchVim        patch_vim           historyVanilla   0
-  origPatch $namePatchRepaint    patch_repaint       patch_scrollback 0
+  origPatch $namePatchRepaint    patch_repaint       historyVanilla   0
 fi
 
 if [[ $exportMeta -eq 1 ]]; then
 
-  metaPatch "scrollback-full"  st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchScrollback 
   metaPatch "scrollback"       st-0.8.3 1 $namePatchHistory $namePatchScrollback 
+  metaPatch "scrollback-full"  st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchScrollback 
 
+  metaPatch "vim"              st-0.8.3 1 $namePatchHistory $namePatchVim 
   metaPatch "vim-full"         st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchVim 
   metaPatch "vim-full-dev"     st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchVim $namePatchRepaint
 
