@@ -24,6 +24,7 @@ namePatchVim="vim-browse"
 # arguments: whether to generate raw patches and meta patches.
 exportRaw=$1
 exportMeta=$2
+base=$3
 
 # Return the name of the generated patch file.
 getPatchFileName() {
@@ -100,6 +101,12 @@ metaPatch() {
   
   echo "meta-output: $patchOutputFile from $tmpBranch"
 }
+
+if [ -z "$base" ]; then
+  base=st-0.8.3
+else
+  echo "Base: $base"
+fi
 
 # 'raw' single patches
 if [[ $exportRaw -eq 1 ]]; then
