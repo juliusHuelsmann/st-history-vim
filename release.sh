@@ -104,15 +104,17 @@ if [[ $exportRaw -eq 1 ]]; then
   origPatch $namePatchHistory    historyVanilla      st-0.8.3         1
   origPatch $namePatchCols       patch_column        historyVanilla   0 
   origPatch $namePatchScrollback patch_scrollback    historyVanilla   0
-  origPatch $namePatchSel        patch_sel           historyVanilla   0
+  origPatch $namePatchVim        patch_vim           historyVanilla   0
   origPatch $namePatchRepaint    patch_repaint       patch_scrollback 0
-  origPatch $namePatchVim        patch_vim           patch_sel        0
 fi
 
 if [[ $exportMeta -eq 1 ]]; then
-  metaPatch "scrollback-full"  st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchSel $namePatchScrollback 
+
+  metaPatch "scrollback-full"  st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchScrollback 
   metaPatch "scrollback"       st-0.8.3 1 $namePatchHistory $namePatchScrollback 
-  metaPatch "vim-full"         st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchSel $namePatchVim 
-  metaPatch "vim-full-dev"     st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchSel $namePatchVim  $namePatchRepaint
+
+  metaPatch "vim-full"         st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchVim 
+  metaPatch "vim-full-dev"     st-0.8.3 1 $namePatchHistory $namePatchCols $namePatchVim $namePatchRepaint
+
 fi
 
