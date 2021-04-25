@@ -475,12 +475,16 @@ int historyMove(int x, int y, int ly) {
 	if ((term.c.y += y) >= term.row) ly += term.c.y - term.row + 1;    //< y
 	else if (term.c.y < 0) ly += term.c.y;
 	term.c.y = MIN(MAX(term.c.y, 0), term.row - 1);
-	int off=insertOff-histOff, bot=rangeY(off), top=-rangeY(-term.row-off),
-	    pTop = (-ly>-top), pBot = (ly > bot), fin=histMode&&(pTop||pBot);
-	if (fin && (x||y)) term.c.x = pBot ? term.col-1 : 0;
-	historyBufferScroll(fin ? (pBot ? bot : top) : ly);
+	// Check if scroll is necessary / arrived at top / bottom of terminal history
+	int t = 0, b = 0, finTop = ly < 0, finBot = ly > 0;
+	if (!IS_SET(MODE_ALTSCREEN)) {
+		b=rangeY(insertOff-histOff), t=-rangeY(-term.row-(insertOff-histOff));
+		finBot = ly > b, finTop=histMode&&((-ly>-t));
+	}
+	if ((finTop || finBot) && (x||y)) term.c.x = finBot ? term.col-1 : 0;
+	historyBufferScroll(finBot ? b : (finTop ? t : ly));
 	historyOpToggle(-1, 1);
-	return fin;
+	return finTop || finBot;
 }
 
 void
