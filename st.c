@@ -113,6 +113,7 @@ typedef struct {
 typedef struct {
 	int row;      /* nb row */
 	int col;      /* nb col */
+	int maxCol;
 	Line *line;   /* screen */
 	Line *alt;    /* alternate screen */
 	int *dirty;   /* dirtyness of lines */
@@ -1236,6 +1237,7 @@ tclearregion(int x1, int y1, int x2, int y2)
 	LIMIT(x2, 0, term.col-1);
 	LIMIT(y1, 0, term.row-1);
 	LIMIT(y2, 0, term.row-1);
+	if (!(term.mode &= MODE_ALTSCREEN) && x2 == term.col - 1) { x2 = term.maxCol -1; }
 
 	for (y = y1; y <= y2; y++) {
 		term.dirty[y] = 1;
@@ -2465,8 +2467,10 @@ void
 tresize(int col, int row)
 {
 	int i;
+  int pmc = term.maxCol;
 	int minrow = MIN(row, term.row);
 	int mincol = MIN(col, term.col);
+	term.maxCol = MAX(col, pmc);
 	int *bp;
 	TCursor c;
 
@@ -2503,14 +2507,14 @@ tresize(int col, int row)
 
 	/* resize each row to new width, zero-pad if needed */
 	for (i = 0; i < minrow; i++) {
-		term.line[i] = xrealloc(term.line[i], col * sizeof(Glyph));
-		term.alt[i]  = xrealloc(term.alt[i],  col * sizeof(Glyph));
+		term.line[i] = xrealloc(term.line[i], term.maxCol * sizeof(Glyph));
+		term.alt[i]  = xrealloc(term.alt[i],  term.maxCol * sizeof(Glyph));
 	}
 
 	/* allocate any new rows */
 	for (/* i = minrow */; i < row; i++) {
-		term.line[i] = xmalloc(col * sizeof(Glyph));
-		term.alt[i] = xmalloc(col * sizeof(Glyph));
+		term.line[i] = xmalloc(term.maxCol * sizeof(Glyph));
+		term.alt[i] = xmalloc(term.maxCol * sizeof(Glyph));
 	}
 	if (col > term.col) {
 		bp = term.tabs + term.col;
@@ -2531,8 +2535,11 @@ tresize(int col, int row)
 	/* Clearing both screens (it makes dirty all lines) */
 	c = term.c;
 	for (i = 0; i < 2; i++) {
+    // mincol < col <=> old term.col < col <=> getting larger; clear region from last pmc  
 		if (mincol < col && 0 < minrow) {
-			tclearregion(mincol, 0, col - 1, minrow - 1);
+      if (pmc <= (col - 1)) {
+				tclearregion(pmc, 0, col - 1, minrow - 1);
+      }
 		}
 		if (0 < col && minrow < row) {
 			tclearregion(0, minrow, col - 1, row - 1);
